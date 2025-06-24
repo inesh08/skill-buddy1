@@ -1,0 +1,12 @@
+FRONTEND:-
+npm install expo
+npm install @react-native-async-storage/async-storage@2.1.2
+npx create-expo-app interview-app
+npx expo start
+
+
+
+
+BACKEND:-
+pip install -r requirements.txt
+python app.py

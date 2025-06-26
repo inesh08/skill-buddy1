@@ -47,14 +47,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: 'Snell Roundhand', // Cursive font
+    fontFamily: 'Helvetica',
     color: COLORS.white,
     textAlign: 'center',
     marginBottom: 30,
+    fontWeight: '600',
   },
   question: {
     fontSize: 18,
-    fontFamily: 'Snell Roundhand', // Cursive font
+    fontFamily: 'Helvetica',
     color: COLORS.lightGray,
     textAlign: 'center',
     marginBottom: 40,
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: COLORS.white,
     fontSize: 16,
-    fontFamily: 'Snell Roundhand', // Cursive font
+    fontFamily: 'Helvetica',
     fontWeight: '600',
   },
 });

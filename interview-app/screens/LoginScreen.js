@@ -90,7 +90,7 @@ export default function LoginScreen({ navigation }) {
           borderRadius: 8,
           marginBottom: 10,
           fontSize: 16,
-          fontFamily: 'PlayfairDisplay_400Regular',
+          fontFamily: 'Helvetica',
           borderWidth: 2,
           borderColor: email && !isValidEmail(email) ? '#E55A2B' : COLORS.darkGray,
         }}
@@ -112,7 +112,7 @@ export default function LoginScreen({ navigation }) {
           borderRadius: 8,
           marginBottom: 20,
           fontSize: 16,
-          fontFamily: 'PlayfairDisplay_400Regular',
+          fontFamily: 'Helvetica',
           borderWidth: 2,
           borderColor: COLORS.darkGray,
         }}
@@ -185,7 +185,7 @@ export default function LoginScreen({ navigation }) {
           borderWidth: 1,
           borderColor: COLORS.primary,
         }}>
-          <Text style={{ color: COLORS.white, fontSize: 12, textAlign: 'center' }}>
+          <Text style={{ color: COLORS.white, fontSize: 12, textAlign: 'center', fontFamily: 'Helvetica' }}>
             Debug: Make sure you've registered with this email first!
           </Text>
         </View>

@@ -8,113 +8,203 @@ import {
   ScrollView,
   Alert,
   TextInput,
+  ActivityIndicator,
   Animated,
   Dimensions
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../styles';
+import { useXP } from '../context/XPContext';
 
 const { width } = Dimensions.get('window');
 
-export default function InterviewResultsScreen({ navigation, route }) {
-  // Get parameters from route (passed from navigation)
-  const params = route?.params || {};
-  const { 
-    careerPath = 'Unknown', 
-    responses = [], 
-    questions = [],
-    isGuestMode = true
-  } = params;
+export default function InterviewResultsScreen() {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { careerPath, responses = [], questions = [] } = route.params || {};
+  const { addXP, getXPRewards } = useXP();
   
   const [feedback, setFeedback] = useState('');
   const [rating, setRating] = useState(0);
-  const [showRoulette, setShowRoulette] = useState(true);
-  const [earnedXP, setEarnedXP] = useState(0);
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [hasSpun, setHasSpun] = useState(false);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [showRoulette, setShowRoulette] = useState(false);
+  const [rouletteSpinning, setRouletteSpinning] = useState(false);
+  const [xpEarned, setXpEarned] = useState(0);
+  const [showXPAnimation, setShowXPAnimation] = useState(false);
 
-  // Roulette animation
-  const spinValue = useRef(new Animated.Value(0)).current;
-  const scaleValue = useRef(new Animated.Value(0)).current;
+  const rouletteRotation = useRef(new Animated.Value(0)).current;
+  const xpAnimation = useRef(new Animated.Value(0)).current;
 
-  // Calculate XP based on responses (mock scoring for demo)
-  const calculateXP = () => {
-    // For demo, let's assume each response gets a random score
-    const correctAnswers = responses.length; // Assume all are correct for demo
-    let baseXP = correctAnswers * 33; // 33 XP per answer
-    
-    // Bonus for completing all questions
-    if (correctAnswers === questions.length && questions.length >= 3) {
-      baseXP += 100; // Bonus XP
-    }
-    
-    return baseXP;
-  };
+  const rouletteSegments = [
+    { label: '50 XP', value: 50, color: '#FF6B35' },
+    { label: '75 XP', value: 75, color: '#FF8C42' },
+    { label: '100 XP', value: 100, color: '#FFA366' },
+    { label: '25 XP', value: 25, color: '#E55A2B' },
+    { label: '150 XP', value: 150, color: '#48BB78' },
+    { label: '200 XP', value: 200, color: '#6C63FF' },
+    { label: '75 XP', value: 75, color: '#FF8C42' },
+    { label: '50 XP', value: 50, color: '#FF6B35' },
+  ];
 
   useEffect(() => {
-    // Animate roulette entrance
-    Animated.spring(scaleValue, {
-      toValue: 1,
-      tension: 100,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
+    // Show roulette after a short delay
+    setTimeout(() => {
+      setShowRoulette(true);
+    }, 1000);
   }, []);
 
   const spinRoulette = () => {
-    if (isSpinning || hasSpun) return;
+    setRouletteSpinning(true);
     
-    setIsSpinning(true);
-    const xp = calculateXP();
-    setEarnedXP(xp);
-
-    // Store XP in local storage (you can replace with actual storage later)
-    const currentXP = parseInt(global.userXP || '0');
-    global.userXP = (currentXP + xp).toString();
-
-    // Spin animation
-    const spinDuration = 3000;
-    const finalRotation = Math.random() * 1440 + 720; // 2-6 full rotations
-
-    Animated.timing(spinValue, {
-      toValue: finalRotation,
-      duration: spinDuration,
+    // Random number of rotations (5-10 full rotations plus random position)
+    const spins = Math.floor(Math.random() * 5) + 5;
+    const randomSegment = Math.floor(Math.random() * rouletteSegments.length);
+    const segmentAngle = 360 / rouletteSegments.length;
+    const finalAngle = spins * 360 + (randomSegment * segmentAngle);
+    
+    Animated.timing(rouletteRotation, {
+      toValue: finalAngle,
+      duration: 3000,
       useNativeDriver: true,
     }).start(() => {
-      setIsSpinning(false);
-      setHasSpun(true);
+      const wonSegment = rouletteSegments[randomSegment];
+      const earnedXP = wonSegment.value;
       
-      // Show XP earned
-      setTimeout(() => {
-        Alert.alert(
-          '🎉 XP Earned!',
-          `You earned ${xp} XP!\n\n${responses.length} correct answers × 33 XP = ${responses.length * 33} XP${responses.length >= 3 ? '\n+ 100 XP completion bonus!' : ''}`,
-          [{ text: 'Awesome!', onPress: () => setShowRoulette(false) }]
-        );
-      }, 500);
+      setXpEarned(earnedXP);
+      addXP(earnedXP, 'Interview Completion');
+      setRouletteSpinning(false);
+      setShowXPAnimation(true);
+      
+      // Animate XP counter
+      Animated.sequence([
+        Animated.timing(xpAnimation, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.delay(2000),
+        Animated.timing(xpAnimation, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setShowXPAnimation(false);
+      });
     });
   };
 
-  const handleSubmitFeedback = () => {
+  const renderRoulette = () => {
+    if (!showRoulette) return null;
+
+    return (
+      <View style={styles.rouletteContainer}>
+        <Text style={styles.rouletteTitle}>🎉 Spin for Bonus XP! 🎉</Text>
+        
+        <View style={styles.rouletteWheel}>
+          <Animated.View
+            style={[
+              styles.wheel,
+              {
+                transform: [{
+                  rotate: rouletteRotation.interpolate({
+                    inputRange: [0, 360],
+                    outputRange: ['0deg', '360deg']
+                  })
+                }]
+              }
+            ]}
+          >
+            {rouletteSegments.map((segment, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.segment,
+                  {
+                    backgroundColor: segment.color,
+                    transform: [
+                      { rotate: `${(360 / rouletteSegments.length) * index}deg` }
+                    ]
+                  }
+                ]}
+              >
+                <Text style={styles.segmentText}>{segment.label}</Text>
+              </View>
+            ))}
+          </Animated.View>
+          
+          {/* Pointer */}
+          <View style={styles.pointer} />
+        </View>
+        
+        <TouchableOpacity
+          style={[styles.spinButton, { opacity: rouletteSpinning ? 0.5 : 1 }]}
+          onPress={spinRoulette}
+          disabled={rouletteSpinning}
+        >
+          <LinearGradient
+            colors={['#48BB78', '#38A169']}
+            style={styles.spinButtonGradient}
+          >
+            <Text style={styles.spinButtonText}>
+              {rouletteSpinning ? 'Spinning...' : 'SPIN!'}
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderXPAnimation = () => {
+    if (!showXPAnimation) return null;
+
+    return (
+      <Animated.View
+        style={[
+          styles.xpAnimationContainer,
+          {
+            opacity: xpAnimation,
+            transform: [{
+              scale: xpAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.5, 1]
+              })
+            }]
+          }
+        ]}
+      >
+        <Text style={styles.xpAnimationText}>+{xpEarned} XP</Text>
+        <Text style={styles.xpAnimationSubtext}>Experience Earned!</Text>
+      </Animated.View>
+    );
+  };
+  const handleSubmitFeedback = async () => {
     if (rating === 0) {
       Alert.alert('Error', 'Please provide a rating before submitting.');
       return;
     }
 
-    Alert.alert(
-      'Thank You!',
-      'Your feedback has been recorded. Consider creating an account to save your progress permanently!',
-      [
-        {
-          text: 'Create Account',
-          onPress: () => navigation.navigate('Signup'),
-        },
-        {
-          text: 'Home',
-          onPress: () => navigation.navigate('Home'),
-        },
-      ]
-    );
+    setIsSubmittingFeedback(true);
+    
+    // Add bonus XP for providing feedback
+    const feedbackXP = 25;
+    addXP(feedbackXP, 'Feedback Provided');
+    
+    // Simulate submitting feedback
+    setTimeout(() => {
+      Alert.alert(
+        'Thank You!',
+        `Your feedback has been recorded. You earned ${feedbackXP} bonus XP for providing feedback!`,
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Home'),
+          },
+        ]
+      );
+      setIsSubmittingFeedback(false);
+    }, 1000);
   };
 
   const renderStarRating = () => {
@@ -138,135 +228,12 @@ export default function InterviewResultsScreen({ navigation, route }) {
     );
   };
 
-  const renderRouletteWheel = () => {
-    const rotation = spinValue.interpolate({
-      inputRange: [0, 360],
-      outputRange: ['0deg', '360deg'],
-    });
-
-    const rouletteSegments = [
-      { color: '#FF8C42', label: 'BONUS!' },
-      { color: '#FF6B35', label: 'XP' },
-      { color: '#FFA366', label: 'GREAT!' },
-      { color: '#E55A2B', label: 'XP' },
-      { color: '#FFD700', label: 'AMAZING!' },
-      { color: '#FF8C42', label: 'XP' },
-      { color: '#FF6B35', label: 'PERFECT!' },
-      { color: '#FFA366', label: 'XP' },
-    ];
-
-    return (
-      <View style={styles.rouletteContainer}>
-        <Text style={styles.rouletteTitle}>🎉 Spin for Your XP Reward! 🎉</Text>
-        
-        <Animated.View 
-          style={[
-            styles.rouletteWheel,
-            { 
-              transform: [
-                { scale: scaleValue },
-                { rotate: rotation }
-              ]
-            }
-          ]}
-        >
-          {rouletteSegments.map((segment, index) => {
-            const angle = (360 / rouletteSegments.length) * index;
-            return (
-              <View
-                key={index}
-                style={[
-                  styles.rouletteSegment,
-                  {
-                    backgroundColor: segment.color,
-                    transform: [{ rotate: `${angle}deg` }],
-                  }
-                ]}
-              >
-                <Text style={styles.segmentText}>{segment.label}</Text>
-              </View>
-            );
-          })}
-          
-          {/* Center circle */}
-          <View style={styles.rouletteCenter}>
-            <Text style={styles.centerText}>XP</Text>
-          </View>
-        </Animated.View>
-
-        {/* Pointer */}
-        <View style={styles.roulettePointer}>
-          <Text style={styles.pointerText}>▼</Text>
-        </View>
-
-        {/* Spin Button */}
-        {!hasSpun && (
-          <LinearGradient
-            colors={['#FFD700', '#FFA500']}
-            style={styles.spinButton}
-          >
-            <TouchableOpacity
-              style={styles.spinButtonInner}
-              onPress={spinRoulette}
-              disabled={isSpinning}
-            >
-              <Text style={styles.spinButtonText}>
-                {isSpinning ? 'SPINNING...' : 'SPIN FOR XP!'}
-              </Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        )}
-
-        {hasSpun && (
-          <View style={styles.xpResult}>
-            <Text style={styles.xpResultText}>🎉 You Earned {earnedXP} XP! 🎉</Text>
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={() => setShowRoulette(false)}
-            >
-              <Text style={styles.continueButtonText}>Continue</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  if (showRoulette) {
-    return (
-      <LinearGradient colors={['#1A1A1A', '#2A2A2A', '#3A3A3A']} style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Interview Complete! 🎉</Text>
-            <Text style={styles.subtitle}>
-              Great job on the {careerPath} interview
-            </Text>
-          </View>
-
-          {/* Quick Summary */}
-          <View style={styles.quickSummary}>
-            <Text style={styles.summaryText}>
-              ✅ {responses.length} questions answered
-            </Text>
-            <Text style={styles.summaryText}>
-              🏆 {Math.round((responses.length / questions.length) * 100)}% completion rate
-            </Text>
-          </View>
-
-          {/* Roulette Wheel */}
-          {renderRouletteWheel()}
-        </ScrollView>
-      </LinearGradient>
-    );
-  }
-
   return (
     <LinearGradient colors={['#1A1A1A', '#2A2A2A', '#3A3A3A']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Interview Complete! 🎉</Text>
+          <Text style={styles.title}>Interview Complete!</Text>
           <Text style={styles.subtitle}>
             Great job completing the {careerPath} interview
           </Text>
@@ -289,51 +256,16 @@ export default function InterviewResultsScreen({ navigation, route }) {
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>Completion Rate:</Text>
             <Text style={styles.statValue}>
-              {questions.length > 0 
-                ? Math.round((responses.length / questions.length) * 100)
-                : 0}%
+              {Math.round((responses.length / questions.length) * 100)}%
             </Text>
           </View>
-
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>XP Earned:</Text>
-            <Text style={[styles.statValue, { color: '#FFD700' }]}>+{earnedXP} XP</Text>
-          </View>
         </View>
 
-        {/* Guest Mode Upgrade Prompt */}
-        <View style={styles.upgradeContainer}>
-          <Text style={styles.upgradeTitle}>🚀 Want to Save Your Progress?</Text>
-          <Text style={styles.upgradeText}>
-            Create an account to save your XP, interview history, and track your improvement over time!
-          </Text>
-          
-          <View style={styles.upgradeButtons}>
-            <LinearGradient
-              colors={['#FFD700', '#FFA500']}
-              style={[styles.button, { flex: 1, marginRight: 5 }]}
-            >
-              <TouchableOpacity
-                style={styles.buttonInner}
-                onPress={() => navigation.navigate('Signup')}
-              >
-                <Text style={styles.buttonText}>Sign Up Free</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-            
-            <LinearGradient
-              colors={['#FF8C42', '#FF6B35']}
-              style={[styles.button, { flex: 1, marginLeft: 5 }]}
-            >
-              <TouchableOpacity
-                style={styles.buttonInner}
-                onPress={() => navigation.navigate('Login')}
-              >
-                <Text style={styles.buttonText}>Login</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-          </View>
-        </View>
+        {/* Roulette Wheel */}
+        {renderRoulette()}
+
+        {/* XP Animation */}
+        {renderXPAnimation()}
 
         {/* Feedback Section */}
         <View style={styles.feedbackContainer}>
@@ -359,13 +291,18 @@ export default function InterviewResultsScreen({ navigation, route }) {
         <View style={styles.buttonContainer}>
           <LinearGradient
             colors={['#FF8C42', '#FF6B35']}
-            style={styles.button}
+            style={styles.gradientButton}
           >
             <TouchableOpacity
               style={styles.buttonInner}
               onPress={handleSubmitFeedback}
+              disabled={isSubmittingFeedback}
             >
-              <Text style={styles.buttonText}>Submit Feedback</Text>
+              {isSubmittingFeedback ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={styles.buttonText}>Submit Feedback (+25 XP)</Text>
+              )}
             </TouchableOpacity>
           </LinearGradient>
 
@@ -402,141 +339,18 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     color: COLORS.white,
     textAlign: 'center',
     marginBottom: 10,
+    fontWeight: '700',
   },
   subtitle: {
     fontSize: 16,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     color: COLORS.lightGray,
     textAlign: 'center',
     opacity: 0.9,
-  },
-  quickSummary: {
-    backgroundColor: COLORS.surface,
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  summaryText: {
-    fontSize: 16,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    marginBottom: 5,
-  },
-  rouletteContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  rouletteTitle: {
-    fontSize: 22,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  rouletteWheel: {
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    position: 'relative',
-    overflow: 'hidden',
-    borderWidth: 5,
-    borderColor: '#FFD700',
-  },
-  rouletteSegment: {
-    position: 'absolute',
-    width: '50%',
-    height: '50%',
-    top: '50%',
-    left: '50%',
-    transformOrigin: '0 0',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
-  segmentText: {
-    fontSize: 12,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  rouletteCenter: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFD700',
-    top: '50%',
-    left: '50%',
-    marginTop: -30,
-    marginLeft: -30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.white,
-  },
-  centerText: {
-    fontSize: 16,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.dark,
-    fontWeight: 'bold',
-  },
-  roulettePointer: {
-    position: 'absolute',
-    top: -10,
-    zIndex: 10,
-  },
-  pointerText: {
-    fontSize: 30,
-    color: '#FFD700',
-  },
-  spinButton: {
-    marginTop: 30,
-    borderRadius: 25,
-    elevation: 5,
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  spinButtonInner: {
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    alignItems: 'center',
-  },
-  spinButtonText: {
-    fontSize: 18,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    fontWeight: 'bold',
-  },
-  xpResult: {
-    marginTop: 30,
-    alignItems: 'center',
-  },
-  xpResultText: {
-    fontSize: 24,
-    fontFamily: 'Snell Roundhand',
-    color: '#FFD700',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  continueButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 20,
-  },
-  continueButtonText: {
-    fontSize: 16,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    fontWeight: 'bold',
   },
   summaryContainer: {
     backgroundColor: COLORS.surface,
@@ -546,12 +360,113 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: COLORS.primary,
   },
+  rouletteContainer: {
+    backgroundColor: COLORS.surface,
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 20,
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#48BB78',
+  },
+  rouletteTitle: {
+    fontSize: 18,
+    fontFamily: 'Helvetica',
+    color: COLORS.white,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  rouletteWheel: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  wheel: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    position: 'relative',
+    borderWidth: 4,
+    borderColor: COLORS.primary,
+  },
+  segment: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    top: 0,
+    left: 50,
+    transformOrigin: '0 100px',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
+  segmentText: {
+    fontSize: 10,
+    fontFamily: 'Helvetica',
+    color: COLORS.white,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  pointer: {
+    position: 'absolute',
+    top: -5,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 20,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#FFD700',
+    zIndex: 10,
+  },
+  spinButton: {
+    borderRadius: 25,
+  },
+  spinButtonGradient: {
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  spinButtonText: {
+    fontSize: 18,
+    fontFamily: 'Helvetica',
+    color: COLORS.white,
+    fontWeight: '700',
+  },
+  xpAnimationContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -75 }, { translateY: -50 }],
+    backgroundColor: 'rgba(72, 187, 120, 0.95)',
+    padding: 20,
+    borderRadius: 15,
+    alignItems: 'center',
+    zIndex: 1000,
+    width: 150,
+  },
+  xpAnimationText: {
+    fontSize: 24,
+    fontFamily: 'Helvetica',
+    color: COLORS.white,
+    fontWeight: '700',
+  },
+  xpAnimationSubtext: {
+    fontSize: 14,
+    fontFamily: 'Helvetica',
+    color: COLORS.white,
+    marginTop: 5,
+  },
   sectionTitle: {
     fontSize: 20,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     color: COLORS.white,
     marginBottom: 15,
     textAlign: 'center',
+    fontWeight: '600',
   },
   statRow: {
     flexDirection: 'row',
@@ -560,42 +475,14 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 16,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     color: COLORS.lightGray,
   },
   statValue: {
     fontSize: 16,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     color: COLORS.primary,
     fontWeight: 'bold',
-  },
-  upgradeContainer: {
-    backgroundColor: COLORS.surface,
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#FFD700',
-  },
-  upgradeTitle: {
-    fontSize: 20,
-    fontFamily: 'Snell Roundhand',
-    color: '#FFD700',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  upgradeText: {
-    fontSize: 16,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  upgradeButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
   },
   feedbackContainer: {
     backgroundColor: COLORS.surface,
@@ -607,7 +494,7 @@ const styles = StyleSheet.create({
   },
   ratingLabel: {
     fontSize: 16,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     color: COLORS.white,
     textAlign: 'center',
     marginBottom: 15,
@@ -622,10 +509,11 @@ const styles = StyleSheet.create({
   },
   starText: {
     fontSize: 30,
+    fontFamily: 'Helvetica',
   },
   feedbackLabel: {
     fontSize: 16,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     color: COLORS.white,
     marginBottom: 10,
   },
@@ -634,14 +522,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     fontSize: 16,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     color: COLORS.dark,
     minHeight: 100,
   },
   buttonContainer: {
     gap: 15,
   },
-  button: {
+  gradientButton: {
     borderRadius: 10,
     elevation: 5,
     shadowColor: '#FF8C42',
@@ -656,7 +544,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: COLORS.white,
     fontSize: 16,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     fontWeight: '600',
   },
   outlineButton: {
@@ -670,7 +558,7 @@ const styles = StyleSheet.create({
   outlineButtonText: {
     color: COLORS.primary,
     fontSize: 16,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     fontWeight: '600',
   },
 });

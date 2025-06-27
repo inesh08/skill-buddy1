@@ -17,11 +17,11 @@ export const COLORS = {
   darkGray: '#3A3A3A',       // Dark Gray for borders/dividers
 };
 
-// Platform-specific cursive fonts that are built-in
+// Platform-specific sans serif fonts that are built-in
 const FONT_FAMILY = Platform.select({
-  ios: 'Snell Roundhand',      // Elegant cursive on iOS
-  android: 'cursive',          // Built-in cursive on Android
-  default: 'serif'             // Fallback
+  ios: 'Helvetica',            // Clean sans serif on iOS
+  android: 'sans-serif',       // Built-in sans serif on Android
+  default: 'sans-serif'        // Fallback sans serif
 });
 
 export const buttonStyle = {

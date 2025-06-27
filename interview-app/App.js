@@ -1,89 +1,57 @@
-// App.js - Navigation with XP System
-import React, { useState, useEffect } from 'react';
-import { StatusBar } from 'expo-status-bar';
-
-// Initialize global XP storage (replace with AsyncStorage or backend later)
-if (!global.userXP) {
-  global.userXP = '0';
-}
+// App.js
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { AuthProvider } from './context/AuthContext';
+import { InterviewProvider } from './context/InterviewContext';
+import { XPProvider } from './context/XPContext';
 
 // Import your screens
 import IntroScreen from './screens/IntroScreen';
 import AboutScreen from './screens/AboutScreen';
 import IntroQuestionScreen from './screens/IntroQuestionScreen';
-import HomeScreen from './screens/HomeScreen';
-import LoginScreen from './screens/LoginScreen';
-import SignupScreen from './screens/SignupScreen';
-import ProfileScreen from './screens/ProfileScreen';
 import InterviewScreen from './screens/InterviewScreen';
 import InterviewResultsScreen from './screens/InterviewResultsScreen';
+import LoginScreen from './screens/LoginScreen';
+import SignupScreen from './screens/SignupScreen';
+import HomeScreen from './screens/HomeScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import UIDesignerScreen from './screens/UIDesignerScreen';
+import SoftwareDevScreen from './screens/SoftwareDevScreen';
 import DataAnalystScreen from './screens/DataAnalystScreen';
 import DigitalMarketerScreen from './screens/DigitalMarketerScreen';
-import SoftwareDevScreen from './screens/SoftwareDevScreen';
-import UIDesignerScreen from './screens/UIDesignerScreen';
+
+const Stack = createStackNavigator();
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState('Intro');
-  const [routeParams, setRouteParams] = useState({});
-
-  // Simple navigation function
-  const navigate = (screenName, params = {}) => {
-    console.log('Navigating to:', screenName, 'with params:', params);
-    setCurrentScreen(screenName);
-    setRouteParams(params);
-  };
-
-  // Create a mock navigation object that matches React Navigation API
-  const navigation = { 
-    navigate,
-    goBack: () => {
-      // Simple back navigation - you can enhance this with a stack
-      navigate('Home');
-    }
-  };
-
-  // Create route object for screens that need params
-  const route = {
-    params: routeParams
-  };
-
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'Intro':
-        return <IntroScreen navigation={navigation} />;
-      case 'About':
-        return <AboutScreen navigation={navigation} />;
-      case 'Questions':
-        return <IntroQuestionScreen navigation={navigation} />;
-      case 'Home':
-        return <HomeScreen navigation={navigation} />;
-      case 'Login':
-        return <LoginScreen navigation={navigation} />;
-      case 'Signup':
-        return <SignupScreen navigation={navigation} />;
-      case 'Profile':
-        return <ProfileScreen navigation={navigation} />;
-      case 'Interview':
-        return <InterviewScreen navigation={navigation} route={route} />;
-      case 'InterviewResults':
-        return <InterviewResultsScreen navigation={navigation} route={route} />;
-      case 'DataAnalyst':
-        return <DataAnalystScreen navigation={navigation} />;
-      case 'DigitalMarketer':
-        return <DigitalMarketerScreen navigation={navigation} />;
-      case 'SoftwareDev':
-        return <SoftwareDevScreen navigation={navigation} />;
-      case 'UIDesigner':
-        return <UIDesignerScreen navigation={navigation} />;
-      default:
-        return <IntroScreen navigation={navigation} />;
-    }
-  };
-
   return (
-    <>
-      <StatusBar style="light" backgroundColor="#1A1A1A" />
-      {renderScreen()}
-    </>
+    <AuthProvider>
+      <XPProvider>
+        <InterviewProvider>
+          <NavigationContainer>
+            <Stack.Navigator 
+              initialRouteName="Intro"
+              screenOptions={{
+                headerShown: false, // Hide headers for custom styling
+              }}
+            >
+              <Stack.Screen name="Intro" component={IntroScreen} />
+              <Stack.Screen name="About" component={AboutScreen} />
+              <Stack.Screen name="Questions" component={IntroQuestionScreen} />
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Signup" component={SignupScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="Interview" component={InterviewScreen} />
+              <Stack.Screen name="InterviewResults" component={InterviewResultsScreen} />
+              <Stack.Screen name="UIDesigner" component={UIDesignerScreen} />
+              <Stack.Screen name="SoftwareDev" component={SoftwareDevScreen} />
+              <Stack.Screen name="DataAnalyst" component={DataAnalystScreen} />
+              <Stack.Screen name="DigitalMarketer" component={DigitalMarketerScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </InterviewProvider>
+      </XPProvider>
+    </AuthProvider>
   );
 }

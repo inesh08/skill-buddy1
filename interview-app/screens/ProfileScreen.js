@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: COLORS.white,
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     marginTop: 10,
   },
   scrollContent: {
@@ -247,13 +247,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.white,
     marginBottom: 5,
+    fontWeight: '600',
   },
   email: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.lightGray,
     opacity: 0.9,
   },
@@ -267,10 +268,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.white,
     marginBottom: 15,
     textAlign: 'center',
+    fontWeight: '600',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -283,13 +285,13 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 24,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.primary,
     fontWeight: 'bold',
   },
   statLabel: {
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.lightGray,
     textAlign: 'center',
     marginTop: 5,
@@ -299,9 +301,10 @@ const styles = StyleSheet.create({
   },
   subSectionTitle: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.white,
     marginBottom: 10,
+    fontWeight: '500',
   },
   careerPathRow: {
     flexDirection: 'row',
@@ -310,13 +313,14 @@ const styles = StyleSheet.create({
   },
   careerPathName: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.lightGray,
   },
   careerPathCount: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.primary,
+    fontWeight: '500',
   },
   sessionsContainer: {
     backgroundColor: COLORS.surface,
@@ -328,7 +332,7 @@ const styles = StyleSheet.create({
   },
   noSessionsText: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.lightGray,
     textAlign: 'center',
     opacity: 0.8,
@@ -347,9 +351,9 @@ const styles = StyleSheet.create({
   },
   sessionCareer: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.white,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -358,21 +362,23 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.white,
     textTransform: 'capitalize',
+    fontWeight: '500',
   },
   sessionDate: {
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.lightGray,
     opacity: 0.8,
     marginBottom: 2,
   },
   sessionResponses: {
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.primary,
+    fontWeight: '500',
   },
   viewAllButton: {
     alignItems: 'center',
@@ -380,9 +386,10 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     color: COLORS.primary,
     textDecorationLine: 'underline',
+    fontWeight: '500',
   },
   buttonContainer: {
     gap: 15,
@@ -402,7 +409,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: COLORS.white,
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     fontWeight: '600',
   },
   outlineButton: {
@@ -416,7 +423,7 @@ const styles = StyleSheet.create({
   outlineButtonText: {
     color: COLORS.primary,
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Helvetica',
     fontWeight: '600',
   },
 });

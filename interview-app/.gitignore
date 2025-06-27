@@ -1,0 +1,49 @@
+# Node modules
+node_modules/
+
+# Dependency lock file (optional if you use yarn or prefer not to track this)
+package-lock.json
+
+# macOS system files
+.DS_Store
+
+# Log files
+*.log
+npm-debug.log*
+
+# React Native and Expo build artifacts
+.expo/
+.expo-shared/
+dist/
+build/
+web-build/
+
+# Android
+android/.gradle/
+android/app/build/
+android/build/
+android/.idea/
+android/local.properties
+
+# iOS
+ios/Pods/
+ios/build/
+ios/.idea/
+ios/Podfile.lock
+
+# Expo cache
+.expo/
+
+# Environment files
+.env
+.env.*.local
+
+# VSCode settings
+.vscode/
+
+# Metro bundler cache
+metro-cache/
+tmp/
+
+# Yarn Integrity
+.yarn-integrity

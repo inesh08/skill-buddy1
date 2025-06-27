@@ -1,213 +1,288 @@
-// screens/HomeScreen.js
+// screens/InterviewScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  TextInput, 
+  ScrollView,
+  Alert,
+  ActivityIndicator 
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../styles';
 
-export default function HomeScreen({ navigation }) {
-  // Simple version without authentication context - all users are guests
-  const isAuthenticated = false; // Set to false for guest mode
-  const user = null;
+// Mock interview questions for different career paths
+const MOCK_QUESTIONS = {
+  SoftwareDev: [
+    {
+      id: 1,
+      category: 'Technical',
+      difficulty: 'Medium',
+      question: 'Can you explain the difference between REST and GraphQL APIs?'
+    },
+    {
+      id: 2,
+      category: 'Problem Solving',
+      difficulty: 'Hard',
+      question: 'How would you optimize a slow-running database query?'
+    },
+    {
+      id: 3,
+      category: 'System Design',
+      difficulty: 'Hard',
+      question: 'Design a scalable chat application architecture.'
+    }
+  ],
+  DataAnalyst: [
+    {
+      id: 1,
+      category: 'Tools',
+      difficulty: 'Easy',
+      question: 'What tools do you use for data visualization and why?'
+    },
+    {
+      id: 2,
+      category: 'Statistics',
+      difficulty: 'Medium',
+      question: 'Explain the difference between correlation and causation.'
+    },
+    {
+      id: 3,
+      category: 'Problem Solving',
+      difficulty: 'Hard',
+      question: 'How would you handle missing data in a large dataset?'
+    }
+  ],
+  UIDesigner: [
+    {
+      id: 1,
+      category: 'Research',
+      difficulty: 'Medium',
+      question: 'How do you approach user research for a new design project?'
+    },
+    {
+      id: 2,
+      category: 'Design Process',
+      difficulty: 'Medium',
+      question: 'Walk me through your design process from concept to final product.'
+    },
+    {
+      id: 3,
+      category: 'Accessibility',
+      difficulty: 'Hard',
+      question: 'How do you ensure your designs are accessible to users with disabilities?'
+    }
+  ],
+  DigitalMarketer: [
+    {
+      id: 1,
+      category: 'Strategy',
+      difficulty: 'Medium',
+      question: 'How would you run a successful paid advertising campaign?'
+    },
+    {
+      id: 2,
+      category: 'Analytics',
+      difficulty: 'Medium',
+      question: 'What metrics do you track to measure campaign success?'
+    },
+    {
+      id: 3,
+      category: 'Content',
+      difficulty: 'Easy',
+      question: 'How do you create engaging content for social media?'
+    }
+  ]
+};
 
-  // XP state and animation
-  const [currentXP, setCurrentXP] = useState(0);
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [xpToNextLevel, setXpToNextLevel] = useState(100);
-  const xpBarWidth = React.useRef(new Animated.Value(0)).current;
+export default function InterviewScreen() {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { careerPath } = route.params || {};
 
-  // Load XP from storage
+  const [questions, setQuestions] = useState([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [responses, setResponses] = useState([]);
+  const [currentResponse, setCurrentResponse] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    const loadXP = () => {
-      const storedXP = parseInt(global.userXP || '0');
-      setCurrentXP(storedXP);
-      
-      // Calculate level and progress
-      const level = Math.floor(storedXP / 100) + 1;
-      const xpInCurrentLevel = storedXP % 100;
-      const xpNeeded = 100 - xpInCurrentLevel;
-      
-      setCurrentLevel(level);
-      setXpToNextLevel(xpNeeded);
-
-      // Animate XP bar
-      Animated.timing(xpBarWidth, {
-        toValue: (xpInCurrentLevel / 100) * 100,
-        duration: 1000,
-        useNativeDriver: false,
-      }).start();
-    };
-
-    loadXP();
-    
-    // Set up interval to check for XP updates
-    const interval = setInterval(loadXP, 1000);
-    return () => clearInterval(interval);
+    initializeInterview();
   }, []);
 
-  const handleLogout = () => {
-    console.log('Logout pressed');
-    // For now, just log since we don't have auth
+  const initializeInterview = () => {
+    if (!careerPath) {
+      Alert.alert('Error', 'No career path selected. Please go back and select one.');
+      navigation.goBack();
+      return;
+    }
+
+    // Load questions for the selected career path
+    const careerQuestions = MOCK_QUESTIONS[careerPath] || MOCK_QUESTIONS.SoftwareDev;
+    setQuestions(careerQuestions);
+    setIsLoading(false);
   };
 
-  const handleStartInterview = () => {
-    // Always allow navigation to Questions screen - no authentication required
-    navigation.navigate('Questions');
+  const handleSubmitResponse = async () => {
+    if (!currentResponse.trim()) {
+      Alert.alert('Error', 'Please provide a response before continuing.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    // Save the response
+    const newResponse = {
+      questionId: questions[currentQuestionIndex].id,
+      question: questions[currentQuestionIndex].question,
+      response: currentResponse,
+      timestamp: new Date().toISOString()
+    };
+    
+    setResponses(prev => [...prev, newResponse]);
+    
+    // Simulate network delay
+    setTimeout(() => {
+      // Check if this was the last question
+      if (currentQuestionIndex + 1 >= questions.length) {
+        // Interview completed
+        Alert.alert(
+          'Interview Complete!',
+          'You have completed all questions. Thank you for your time!',
+          [
+            {
+              text: 'View Results',
+              onPress: () => navigation.navigate('InterviewResults', {
+                careerPath,
+                responses: [...responses, newResponse],
+                questions
+              }),
+            },
+          ]
+        );
+      } else {
+        // Move to next question
+        setCurrentQuestionIndex(prev => prev + 1);
+        setCurrentResponse('');
+      }
+      setIsSubmitting(false);
+    }, 500);
   };
 
-  const renderXPMonitor = () => {
-    return (
-      <View style={styles.xpContainer}>
-        <LinearGradient
-          colors={['#FFD700', '#FFA500', '#FF8C42']}
-          style={styles.xpGradient}
-        >
-          <View style={styles.xpHeader}>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelText}>LVL {currentLevel}</Text>
-            </View>
-            <View style={styles.xpInfo}>
-              <Text style={styles.xpAmount}>{currentXP} XP</Text>
-              <Text style={styles.xpNextLevel}>{xpToNextLevel} XP to next level</Text>
-            </View>
-            <View style={styles.xpIcon}>
-              <Text style={styles.xpIconText}>⭐</Text>
-            </View>
-          </View>
-          
-          {/* XP Progress Bar */}
-          <View style={styles.xpProgressContainer}>
-            <View style={styles.xpProgressBackground}>
-              <Animated.View 
-                style={[
-                  styles.xpProgressFill,
-                  {
-                    width: xpBarWidth.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ['0%', '100%'],
-                      extrapolate: 'clamp',
-                    })
-                  }
-                ]}
-              />
-            </View>
-            <Text style={styles.xpProgressText}>
-              {currentXP % 100}/100 XP
-            </Text>
-          </View>
-        </LinearGradient>
-      </View>
+  const handleEndInterview = () => {
+    Alert.alert(
+      'End Interview',
+      'Are you sure you want to end the interview? Your progress will be saved.',
+      [
+        {
+          text: 'Continue',
+          style: 'cancel',
+        },
+        {
+          text: 'End Interview',
+          onPress: () => {
+            navigation.navigate('InterviewResults', {
+              careerPath,
+              responses,
+              questions
+            });
+          },
+        },
+      ]
     );
   };
 
+  const getCurrentQuestion = () => {
+    return questions[currentQuestionIndex];
+  };
+
+  const getProgress = () => {
+    return ((currentQuestionIndex / questions.length) * 100);
+  };
+
+  const currentQuestion = getCurrentQuestion();
+  const progress = getProgress();
+
+  if (isLoading || !currentQuestion) {
+    return (
+      <LinearGradient colors={['#1A1A1A', '#2A2A2A', '#3A3A3A']} style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading interview...</Text>
+      </LinearGradient>
+    );
+  }
+
   return (
     <LinearGradient colors={['#1A1A1A', '#2A2A2A', '#3A3A3A']} style={styles.container}>
-      {/* XP Monitor at the top */}
-      {renderXPMonitor()}
-
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>Welcome to Skillbuddy</Text>
-        
-        <Text style={styles.subtitle}>
-          Practice your interview skills and earn XP!
-        </Text>
-
-        {isAuthenticated && (
-          <Text style={styles.welcomeText}>
-            Hello, {user?.email || 'User'}!
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Mock Interview: {careerPath}</Text>
+          <Text style={styles.progress}>
+            Question {currentQuestionIndex + 1} of {questions.length}
           </Text>
-        )}
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${progress}%` }]} />
+          </View>
+        </View>
 
-        {/* Main action button - always visible */}
-        <LinearGradient
-          colors={['#FF8C42', '#FF6B35']}
-          style={styles.gradientButton}
-        >
-          <TouchableOpacity
-            style={styles.buttonInner}
-            onPress={handleStartInterview}
+        {/* Question */}
+        <View style={styles.questionContainer}>
+          <Text style={styles.questionCategory}>{currentQuestion.category}</Text>
+          <Text style={styles.questionDifficulty}>
+            Difficulty: {currentQuestion.difficulty}
+          </Text>
+          <Text style={styles.question}>{currentQuestion.question}</Text>
+        </View>
+
+        {/* Response Input */}
+        <View style={styles.responseContainer}>
+          <Text style={styles.responseLabel}>Your Response:</Text>
+          <TextInput
+            style={styles.responseInput}
+            value={currentResponse}
+            onChangeText={setCurrentResponse}
+            multiline
+            numberOfLines={6}
+            placeholder="Type your answer here..."
+            placeholderTextColor="#888888"
+            textAlignVertical="top"
+          />
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.buttonContainer}>
+          <LinearGradient
+            colors={['#FF8C42', '#FF6B35']}
+            style={styles.gradientButton}
           >
-            <Text style={styles.buttonText}>Start Interview</Text>
-            <Text style={styles.buttonSubtext}>Earn XP for each answer!</Text>
+            <TouchableOpacity
+              style={styles.buttonInner}
+              onPress={handleSubmitResponse}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={styles.buttonText}>
+                  {currentQuestionIndex + 1 === questions.length ? 'Finish' : 'Next Question'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </LinearGradient>
+
+          <TouchableOpacity
+            style={styles.outlineButton}
+            onPress={handleEndInterview}
+          >
+            <Text style={styles.outlineButtonText}>End Interview</Text>
           </TouchableOpacity>
-        </LinearGradient>
-
-        {/* XP Benefits Info */}
-        <View style={styles.xpBenefitsContainer}>
-          <Text style={styles.xpBenefitsTitle}>🏆 XP Rewards</Text>
-          <View style={styles.xpBenefitItem}>
-            <Text style={styles.xpBenefitText}>✅ +33 XP per correct answer</Text>
-          </View>
-          <View style={styles.xpBenefitItem}>
-            <Text style={styles.xpBenefitText}>🎯 +100 XP bonus for completing all questions</Text>
-          </View>
-          <View style={styles.xpBenefitItem}>
-            <Text style={styles.xpBenefitText}>🎡 Spin the roulette wheel for bonus rewards!</Text>
-          </View>
         </View>
-
-        <Text style={styles.infoText}>
-          Choose from multiple career paths and level up your skills
-        </Text>
-
-        {/* Auth section with prominent buttons */}
-        <View style={styles.authSection}>
-          {isAuthenticated ? (
-            <>
-              <TouchableOpacity
-                style={styles.linkButton}
-                onPress={() => navigation.navigate('Profile')}
-              >
-                <Text style={styles.linkText}>View Profile</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.linkButton}
-                onPress={handleLogout}
-              >
-                <Text style={styles.linkText}>Logout</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={styles.authPrompt}>
-                🚀 Save your XP and track progress across devices!
-              </Text>
-              
-              <View style={styles.authButtonsContainer}>
-                {/* Prominent Login Button */}
-                <LinearGradient
-                  colors={['#FF6B35', '#E55A2B']}
-                  style={styles.authGradientButton}
-                >
-                  <TouchableOpacity
-                    style={styles.authButtonInner}
-                    onPress={() => navigation.navigate('Login')}
-                  >
-                    <Text style={styles.authButtonText}>Login</Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-
-                {/* Prominent Signup Button */}
-                <LinearGradient
-                  colors={['#FFA366', '#FF8C42']}
-                  style={styles.authGradientButton}
-                >
-                  <TouchableOpacity
-                    style={styles.authButtonInner}
-                    onPress={() => navigation.navigate('Signup')}
-                  >
-                    <Text style={styles.authButtonText}>Sign Up</Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              </View>
-
-              <Text style={styles.guestModeText}>
-                Playing as guest • XP resets when app closes
-              </Text>
-            </>
-          )}
-        </View>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }
@@ -216,119 +291,101 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  xpContainer: {
-    margin: 20,
-    marginTop: 60,
-    borderRadius: 15,
-    elevation: 8,
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  xpGradient: {
-    padding: 20,
-    borderRadius: 15,
-  },
-  xpHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  levelBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 15,
-  },
-  levelText: {
-    fontSize: 14,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    fontWeight: 'bold',
-  },
-  xpInfo: {
-    flex: 1,
-  },
-  xpAmount: {
-    fontSize: 24,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    fontWeight: 'bold',
-  },
-  xpNextLevel: {
-    fontSize: 12,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    opacity: 0.9,
-  },
-  xpIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  xpIconText: {
-    fontSize: 20,
-  },
-  xpProgressContainer: {
-    alignItems: 'center',
-  },
-  xpProgressBackground: {
-    width: '100%',
-    height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  xpProgressFill: {
-    height: '100%',
-    backgroundColor: COLORS.white,
-    borderRadius: 4,
-  },
-  xpProgressText: {
-    fontSize: 12,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    fontWeight: 'bold',
-  },
-  contentContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    color: COLORS.white,
+    fontSize: 18,
+    fontFamily: 'Helvetica',
+    marginTop: 10,
+  },
+  scrollContent: {
     padding: 20,
+    paddingTop: 60,
+  },
+  header: {
+    marginBottom: 30,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontFamily: 'Helvetica',
     color: COLORS.white,
-    marginBottom: 15,
-    fontFamily: 'Snell Roundhand',
     textAlign: 'center',
+    marginBottom: 10,
+    fontWeight: '600',
   },
-  subtitle: {
+  progress: {
     fontSize: 16,
+    fontFamily: 'Helvetica',
     color: COLORS.lightGray,
-    marginBottom: 20,
-    fontFamily: 'Snell Roundhand',
     textAlign: 'center',
-    opacity: 0.9,
+    marginBottom: 10,
   },
-  welcomeText: {
-    fontSize: 18,
+  progressBar: {
+    height: 4,
+    backgroundColor: COLORS.darkGray,
+    borderRadius: 2,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
+  },
+  questionContainer: {
+    backgroundColor: COLORS.surface,
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 30,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+  questionCategory: {
+    fontSize: 14,
+    fontFamily: 'Helvetica',
     color: COLORS.primary,
-    marginBottom: 20,
-    fontFamily: 'Snell Roundhand',
-    textAlign: 'center',
+    marginBottom: 5,
+    fontWeight: '500',
+  },
+  questionDifficulty: {
+    fontSize: 12,
+    fontFamily: 'Helvetica',
+    color: COLORS.lightGray,
+    opacity: 0.8,
+    marginBottom: 15,
+  },
+  question: {
+    fontSize: 18,
+    fontFamily: 'Helvetica',
+    color: COLORS.white,
+    lineHeight: 26,
+  },
+  responseContainer: {
+    marginBottom: 30,
+  },
+  responseLabel: {
+    fontSize: 16,
+    fontFamily: 'Helvetica',
+    color: COLORS.white,
+    marginBottom: 10,
+    fontWeight: '500',
+  },
+  responseInput: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: 15,
+    fontSize: 16,
+    fontFamily: 'Helvetica',
+    color: COLORS.dark,
+    minHeight: 120,
+  },
+  buttonContainer: {
+    gap: 15,
   },
   gradientButton: {
-    borderRadius: 12,
-    marginVertical: 25,
-    width: '80%',
+    borderRadius: 10,
     elevation: 5,
     shadowColor: '#FF8C42',
     shadowOffset: { width: 0, height: 4 },
@@ -336,115 +393,27 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   buttonInner: {
-    padding: 18,
+    padding: 15,
     alignItems: 'center',
   },
   buttonText: {
     color: COLORS.white,
-    fontSize: 18,
-    fontFamily: 'Snell Roundhand',
-    fontWeight: 'bold',
-  },
-  buttonSubtext: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontFamily: 'Snell Roundhand',
-    opacity: 0.9,
-    marginTop: 4,
-  },
-  xpBenefitsContainer: {
-    backgroundColor: COLORS.surface,
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-    width: '90%',
-    borderWidth: 1,
-    borderColor: '#FFD700',
-  },
-  xpBenefitsTitle: {
     fontSize: 16,
-    fontFamily: 'Snell Roundhand',
-    color: '#FFD700',
-    textAlign: 'center',
-    marginBottom: 10,
-    fontWeight: 'bold',
-  },
-  xpBenefitItem: {
-    marginBottom: 5,
-  },
-  xpBenefitText: {
-    fontSize: 14,
-    fontFamily: 'Snell Roundhand',
-    color: COLORS.white,
-    textAlign: 'center',
-  },
-  infoText: {
-    fontSize: 14,
-    color: COLORS.lightGray,
-    marginBottom: 30,
-    fontFamily: 'Snell Roundhand',
-    textAlign: 'center',
-    opacity: 0.8,
-  },
-  authSection: {
-    alignItems: 'center',
-    marginTop: 20,
-    width: '100%',
-  },
-  authPrompt: {
-    fontSize: 16,
-    color: COLORS.white,
-    marginBottom: 20,
-    fontFamily: 'Snell Roundhand',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  authButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '80%',
-    gap: 15,
-    marginBottom: 15,
-  },
-  authGradientButton: {
-    flex: 1,
-    borderRadius: 10,
-    elevation: 3,
-    shadowColor: '#FF8C42',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  authButtonInner: {
-    padding: 15,
-    alignItems: 'center',
-  },
-  authButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontFamily: 'Snell Roundhand',
+    fontFamily: 'Helvetica',
     fontWeight: '600',
   },
-  linkButton: {
-    marginTop: 5,
-    backgroundColor: 'transparent',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    borderWidth: 1,
+  outlineButton: {
+    borderWidth: 2,
     borderColor: COLORS.primary,
+    borderRadius: 10,
+    padding: 15,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
-  linkText: {
+  outlineButtonText: {
     color: COLORS.primary,
     fontSize: 16,
-    fontFamily: 'Snell Roundhand',
-  },
-  guestModeText: {
-    fontSize: 12,
-    color: COLORS.gray,
-    fontFamily: 'Snell Roundhand',
-    textAlign: 'center',
-    marginTop: 10,
-    opacity: 0.8,
+    fontFamily: 'Helvetica',
+    fontWeight: '600',
   },
 });

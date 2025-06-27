@@ -57,7 +57,7 @@ export default function IntroScreen({ navigation }) {
     Animated.loop(
       Animated.timing(rotationValue, {
         toValue: 1,
-        duration: 20000,
+        duration: 2000,
         useNativeDriver: true,
       })
     ).start();
